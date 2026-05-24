@@ -435,9 +435,8 @@ body::before {
 
 .result-meta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
-  align-items: center;
+  align-items: start;
   padding: 16px;
 }
 
@@ -449,14 +448,16 @@ body::before {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  justify-content: space-between;
 }
 
 .file-name {
   margin: 0 0 4px;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .file-detail {
@@ -468,7 +469,8 @@ body::before {
 .view-button,
 .download-button {
   padding: 12px 16px;
-  min-width: 96px;
+  flex: 1 1 0;
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -547,17 +549,18 @@ body::before {
   }
 
   .result-meta {
-    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .result-actions {
     width: 100%;
+    flex-direction: column;
     justify-content: stretch;
   }
 
   .view-button,
   .download-button {
-    flex: 1 1 100%;
+    width: 100%;
   }
 
   .results-grid {
