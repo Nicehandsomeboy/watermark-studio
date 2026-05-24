@@ -22,7 +22,7 @@
         <p>ประมวลผลทั้งหมดในเบราว์เซอร์ของคุณ</p>
         <ul>
           <li>รองรับหลายไฟล์พร้อมกัน</li>
-          <li>ใช้กับ JPG, PNG, WebP, BMP, SVG และชนิดที่เบราว์เซอร์เปิดได้</li>
+          <li>ใช้กับ JPG, PNG, SVG และชนิดไฟล์ภาพที่เบราว์เซอร์เปิดได้</li>
           <li>ลายน้ำเป็นข้อความหรือรูปภาพ</li>
         </ul>
       </div>
@@ -121,9 +121,9 @@
               <span>ส่งออกเป็น</span>
               <select id="outputFormat">
                 <option value="auto">ตามชนิดไฟล์เดิม</option>
-                <option value="image/png">PNG</option>
+                <option value="image/svg+xml">SVG</option>
                 <option value="image/jpeg">JPG</option>
-                <option value="image/webp">WebP</option>
+                <option value="image/png">PNG</option>
               </select>
             </label>
           </div>
@@ -147,7 +147,7 @@
         </div>
 
         <p class="support-note">
-          ไฟล์อย่าง SVG หรือ GIF สามารถนำเข้าได้ถ้าเบราว์เซอร์เปิดได้ แต่ผลลัพธ์หลังใส่ลายน้ำจะถูกส่งออกเป็นภาพนิ่ง
+          ถ้าเลือก SVG เป็นไฟล์ส่งออก ระบบจะสร้าง SVG ใหม่จากภาพผลลัพธ์ที่ฝังอยู่ภายในเพื่อให้นามสกุลเป็น .svg
         </p>
       </section>
 
@@ -181,7 +181,7 @@
         <img alt="">
       </div>
       <div class="result-meta">
-        <div>
+        <div class="result-info">
           <h3 class="file-name"></h3>
           <p class="file-detail"></p>
         </div>

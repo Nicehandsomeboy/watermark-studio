@@ -60,18 +60,17 @@ function formatBytes(bytes) {
   if (bytes < 1024) {
     return `${bytes} B`;
   }
+
   const units = ["KB", "MB", "GB"];
   let size = bytes / 1024;
   let unitIndex = 0;
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex += 1;
   }
-  return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
-}
 
-function sanitizeFileName(name) {
-  return name.replace(/\.[^.]+$/, "").replace(/[^\wก-๙-]+/g, "-").replace(/^-+|-+$/g, "") || "watermarked";
+  return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
 function setStatus(text) {
@@ -139,12 +138,15 @@ function toggleMode(mode) {
 
 function getOutputMimeType(fileType) {
   const requested = elements.outputFormat.value;
+
   if (requested !== "auto") {
     return requested;
   }
-  if (INPUT_ACCEPTS.includes(fileType) && fileType !== "image/svg+xml" && fileType !== "image/gif") {
+
+  if (INPUT_ACCEPTS.includes(fileType)) {
     return fileType;
   }
+
   return "image/png";
 }
 
@@ -158,9 +160,19 @@ function getFileExtension(mimeType) {
       return "webp";
     case "image/bmp":
       return "bmp";
+    case "image/gif":
+      return "gif";
+    case "image/svg+xml":
+      return "svg";
     default:
       return "png";
   }
+}
+
+function makeDownloadName(index, mimeType) {
+  const extension = getFileExtension(mimeType);
+  const paddedNumber = String(index + 1).padStart(2, "0");
+  return `watermarked_${paddedNumber}.${extension}`;
 }
 
 async function loadImageFromFile(file) {
@@ -196,6 +208,17 @@ function canvasToBlob(canvas, mimeType, quality) {
       }
     }, mimeType, quality);
   });
+}
+
+async function canvasToSvgBlob(canvas) {
+  const pngDataUrl = canvas.toDataURL("image/png");
+  const svgMarkup = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">`,
+    `<image href="${pngDataUrl}" width="${canvas.width}" height="${canvas.height}"/>`,
+    "</svg>",
+  ].join("");
+
+  return new Blob([svgMarkup], { type: "image/svg+xml" });
 }
 
 function computeWatermarkBox(canvasWidth, canvasHeight) {
@@ -282,8 +305,10 @@ function drawImageWatermark(ctx, canvasWidth, canvasHeight, watermarkImage) {
 
 function drawTiledWatermark(ctx, canvasWidth, canvasHeight, rotation, tileStepX, tileStepY, paint) {
   const diagonalOffset = elements.repeatDiagonal.checked ? tileStepX / 2 : 0;
+
   for (let y = tileStepY / 2; y < canvasHeight + tileStepY; y += tileStepY) {
     const rowShift = elements.repeatDiagonal.checked && Math.round(y / tileStepY) % 2 ? diagonalOffset : 0;
+
     for (let x = tileStepX / 2; x < canvasWidth + tileStepX; x += tileStepX) {
       ctx.save();
       ctx.translate(x + rowShift, y);
@@ -310,7 +335,7 @@ function resolveAnchorPosition(position, canvasWidth, canvasHeight, boxWidth, bo
   }
 }
 
-async function renderWatermarkedFile(file, watermarkImage) {
+async function renderWatermarkedFile(file, watermarkImage, index) {
   const sourceImage = await loadImageFromFile(file);
   const width = sourceImage.naturalWidth || sourceImage.width;
   const height = sourceImage.naturalHeight || sourceImage.height;
@@ -331,15 +356,17 @@ async function renderWatermarkedFile(file, watermarkImage) {
 
   const mimeType = getOutputMimeType(file.type);
   const quality = Number(elements.quality.value) / 100;
-  const blob = await canvasToBlob(canvas, mimeType, quality);
-  const extension = getFileExtension(mimeType);
+  const blob = mimeType === "image/svg+xml"
+    ? await canvasToSvgBlob(canvas)
+    : await canvasToBlob(canvas, mimeType, quality);
 
   return {
     blob,
     previewUrl: URL.createObjectURL(blob),
-    fileName: `${sanitizeFileName(file.name)}-watermarked.${extension}`,
+    fileName: makeDownloadName(index, mimeType),
     width,
     height,
+    mimeType,
   };
 }
 
@@ -421,7 +448,7 @@ async function processImages() {
     for (let index = 0; index < state.sourceFiles.length; index += 1) {
       const file = state.sourceFiles[index];
       setStatus(`กำลังประมวลผล ${index + 1}/${state.sourceFiles.length}: ${file.name}`);
-      const result = await renderWatermarkedFile(file, watermarkImage);
+      const result = await renderWatermarkedFile(file, watermarkImage, index);
       state.results.push(result);
       renderResults();
     }
