@@ -32,7 +32,7 @@
       <section class="panel controls-panel">
         <div class="panel-header">
           <h2>ตั้งค่าลายน้ำ</h2>
-          <p>เลือกไฟล์รูปหลักและปรับลายน้ำตามต้องการ</p>
+          <p>เลือกรูปหลักและปรับลายน้ำตามต้องการ</p>
         </div>
 
         <div class="field-stack">
@@ -157,9 +157,17 @@
           <p id="statusText">ยังไม่มีรูปภาพที่เลือก</p>
         </div>
 
+        <section id="selectedPreviewSection" class="selected-preview-section is-hidden">
+          <div class="selected-preview-header">
+            <h3>รูปที่เลือกไว้</h3>
+            <p id="selectedPreviewCount"></p>
+          </div>
+          <div id="selectedPreviewGrid" class="selected-preview-grid"></div>
+        </section>
+
         <div id="emptyState" class="empty-state">
           <h3>เริ่มต้นด้วยการเลือกรูปภาพ</h3>
-          <p>เมื่อประมวลผลแล้ว คุณจะเห็นตัวอย่างพร้อมปุ่มดาวน์โหลดในแต่ละใบ</p>
+          <p>เมื่อประมวลผลแล้ว คุณจะเห็นตัวอย่างพร้อมปุ่มดูรูปและปุ่มดาวน์โหลดในแต่ละใบ</p>
         </div>
 
         <div id="resultsGrid" class="results-grid"></div>
@@ -177,10 +185,25 @@
           <h3 class="file-name"></h3>
           <p class="file-detail"></p>
         </div>
-        <button class="download-button" type="button">ดาวน์โหลด</button>
+        <div class="result-actions">
+          <button class="view-button" type="button">ดูรูป</button>
+          <button class="download-button" type="button">ดาวน์โหลด</button>
+        </div>
       </div>
     </article>
   </template>
+
+  <dialog id="imagePreviewDialog" class="image-preview-dialog">
+    <div class="dialog-shell">
+      <div class="dialog-header">
+        <h3 id="dialogTitle">ตัวอย่างรูป</h3>
+        <button id="closeDialogButton" class="dialog-close-button" type="button" aria-label="ปิด">ปิด</button>
+      </div>
+      <div class="dialog-image-wrap">
+        <img id="dialogImage" alt="">
+      </div>
+    </div>
+  </dialog>
 
   <script src="app.js"></script>
 </body>

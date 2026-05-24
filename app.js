@@ -3,6 +3,7 @@ const state = {
   sourceFiles: [],
   watermarkImageFile: null,
   results: [],
+  selectedPreviewUrls: [],
 };
 
 const elements = {
@@ -24,6 +25,9 @@ const elements = {
   downloadAllButton: document.getElementById("downloadAllButton"),
   emptyState: document.getElementById("emptyState"),
   resultsGrid: document.getElementById("resultsGrid"),
+  selectedPreviewSection: document.getElementById("selectedPreviewSection"),
+  selectedPreviewGrid: document.getElementById("selectedPreviewGrid"),
+  selectedPreviewCount: document.getElementById("selectedPreviewCount"),
   statusText: document.getElementById("statusText"),
   textWatermarkFields: document.getElementById("textWatermarkFields"),
   imageWatermarkFields: document.getElementById("imageWatermarkFields"),
@@ -33,6 +37,10 @@ const elements = {
   scaleValue: document.getElementById("scaleValue"),
   rotationValue: document.getElementById("rotationValue"),
   qualityValue: document.getElementById("qualityValue"),
+  imagePreviewDialog: document.getElementById("imagePreviewDialog"),
+  dialogImage: document.getElementById("dialogImage"),
+  dialogTitle: document.getElementById("dialogTitle"),
+  closeDialogButton: document.getElementById("closeDialogButton"),
   toggleButtons: [...document.querySelectorAll(".toggle-button")],
 };
 
@@ -76,6 +84,48 @@ function updateRangeLabels() {
   elements.scaleValue.textContent = `${elements.scale.value}%`;
   elements.rotationValue.textContent = `${elements.rotation.value}°`;
   elements.qualityValue.textContent = `${elements.quality.value}%`;
+}
+
+function revokeSelectedPreviews() {
+  state.selectedPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+  state.selectedPreviewUrls = [];
+}
+
+function renderSelectedPreviews() {
+  elements.selectedPreviewGrid.innerHTML = "";
+  const shouldShow = state.sourceFiles.length > 0 && state.results.length === 0;
+  elements.selectedPreviewSection.classList.toggle("is-hidden", !shouldShow);
+
+  if (!shouldShow) {
+    return;
+  }
+
+  revokeSelectedPreviews();
+  elements.selectedPreviewCount.textContent = `${state.sourceFiles.length} รูป`;
+
+  state.sourceFiles.forEach((file) => {
+    const previewUrl = URL.createObjectURL(file);
+    state.selectedPreviewUrls.push(previewUrl);
+
+    const card = document.createElement("article");
+    card.className = "selected-preview-card";
+
+    const thumb = document.createElement("div");
+    thumb.className = "selected-preview-thumb";
+
+    const image = document.createElement("img");
+    image.src = previewUrl;
+    image.alt = file.name;
+
+    const name = document.createElement("p");
+    name.className = "selected-preview-name";
+    name.textContent = file.name;
+
+    thumb.appendChild(image);
+    card.appendChild(thumb);
+    card.appendChild(name);
+    elements.selectedPreviewGrid.appendChild(card);
+  });
 }
 
 function toggleMode(mode) {
@@ -283,14 +333,13 @@ async function renderWatermarkedFile(file, watermarkImage) {
   const quality = Number(elements.quality.value) / 100;
   const blob = await canvasToBlob(canvas, mimeType, quality);
   const extension = getFileExtension(mimeType);
-  const fileName = `${sanitizeFileName(file.name)}-watermarked.${extension}`;
+
   return {
     blob,
     previewUrl: URL.createObjectURL(blob),
-    fileName,
+    fileName: `${sanitizeFileName(file.name)}-watermarked.${extension}`,
     width,
     height,
-    originalType: file.type || "unknown",
   };
 }
 
@@ -299,23 +348,39 @@ function revokeResults() {
   state.results = [];
 }
 
+function openPreviewDialog(imageUrl, title) {
+  elements.dialogImage.src = imageUrl;
+  elements.dialogImage.alt = title;
+  elements.dialogTitle.textContent = title;
+  elements.imagePreviewDialog.showModal();
+}
+
+function closePreviewDialog() {
+  if (elements.imagePreviewDialog.open) {
+    elements.imagePreviewDialog.close();
+  }
+}
+
 function renderResults() {
   elements.resultsGrid.innerHTML = "";
   const hasResults = state.results.length > 0;
-  elements.emptyState.hidden = hasResults;
+  elements.emptyState.hidden = hasResults || state.sourceFiles.length > 0;
   elements.downloadAllButton.disabled = !hasResults;
+  elements.selectedPreviewSection.classList.toggle("is-hidden", hasResults || state.sourceFiles.length === 0);
 
   state.results.forEach((result) => {
     const fragment = elements.resultCardTemplate.content.cloneNode(true);
     const cardImage = fragment.querySelector("img");
     const fileName = fragment.querySelector(".file-name");
     const fileDetail = fragment.querySelector(".file-detail");
+    const viewButton = fragment.querySelector(".view-button");
     const downloadButton = fragment.querySelector(".download-button");
 
     cardImage.src = result.previewUrl;
     cardImage.alt = result.fileName;
     fileName.textContent = result.fileName;
     fileDetail.textContent = `${result.width} x ${result.height}px • ${formatBytes(result.blob.size)}`;
+    viewButton.addEventListener("click", () => openPreviewDialog(result.previewUrl, result.fileName));
     downloadButton.addEventListener("click", () => downloadBlob(result.blob, result.fileName));
 
     elements.resultsGrid.appendChild(fragment);
@@ -379,11 +444,20 @@ function downloadAll() {
 
 function handleSourceSelection(files) {
   state.sourceFiles = [...files].filter((file) => file.type.startsWith("image/") || /\.svg$/i.test(file.name));
+  revokeResults();
+  elements.resultsGrid.innerHTML = "";
+
   if (state.sourceFiles.length === 0) {
+    revokeSelectedPreviews();
+    elements.emptyState.hidden = false;
+    renderSelectedPreviews();
     setStatus("ยังไม่มีไฟล์ภาพที่รองรับ");
     return;
   }
+
   setStatus(`เลือกแล้ว ${state.sourceFiles.length} ไฟล์`);
+  elements.emptyState.hidden = true;
+  renderSelectedPreviews();
 }
 
 function setupUploadZone(zone, input, onFilesSelected) {
@@ -428,6 +502,12 @@ elements.watermarkImage.addEventListener("change", (event) => {
 
 elements.processButton.addEventListener("click", processImages);
 elements.downloadAllButton.addEventListener("click", downloadAll);
+elements.closeDialogButton.addEventListener("click", closePreviewDialog);
+elements.imagePreviewDialog.addEventListener("click", (event) => {
+  if (event.target === elements.imagePreviewDialog) {
+    closePreviewDialog();
+  }
+});
 
 [elements.margin, elements.opacity, elements.scale, elements.rotation, elements.quality].forEach((input) => {
   input.addEventListener("input", updateRangeLabels);
@@ -442,3 +522,4 @@ setupUploadZone(document.querySelector('label[for="watermarkImage"]'), elements.
 
 updateRangeLabels();
 toggleMode("text");
+renderResults();
