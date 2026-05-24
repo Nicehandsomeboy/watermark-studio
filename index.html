@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watermark Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Batch Watermark Web App</p>
+        <h1>ใส่ลายน้ำหลายรูป พร้อมคงขนาดภาพต้นฉบับ</h1>
+        <p class="hero-text">
+          อัปโหลดรูปได้หลายไฟล์ในครั้งเดียว เลือกลายน้ำเป็นข้อความหรือรูปภาพ
+          แล้วส่งออกโดยรักษาความกว้างและความสูงเดิมของแต่ละไฟล์
+        </p>
+      </div>
+      <div class="hero-card">
+        <div class="badge">No Upload Server</div>
+        <p>ประมวลผลทั้งหมดในเบราว์เซอร์ของคุณ</p>
+        <ul>
+          <li>รองรับหลายไฟล์พร้อมกัน</li>
+          <li>ใช้กับ JPG, PNG, WebP, BMP, SVG และชนิดที่เบราว์เซอร์เปิดได้</li>
+          <li>ลายน้ำเป็นข้อความหรือรูปภาพ</li>
+        </ul>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel controls-panel">
+        <div class="panel-header">
+          <h2>ตั้งค่าลายน้ำ</h2>
+          <p>เลือกไฟล์รูปหลักและปรับลายน้ำตามต้องการ</p>
+        </div>
+
+        <div class="field-stack">
+          <label class="upload-zone" for="sourceImages">
+            <input id="sourceImages" type="file" accept="image/*,.svg" multiple>
+            <span class="upload-title">เลือกรูปภาพหลักหลายไฟล์</span>
+            <span class="upload-subtitle">ลากมาวางได้ รองรับไฟล์ภาพตามที่เบราว์เซอร์ของคุณอ่านได้</span>
+          </label>
+
+          <div class="mode-toggle" role="radiogroup" aria-label="ชนิดลายน้ำ">
+            <button class="toggle-button is-active" type="button" data-mode="text">ลายน้ำข้อความ</button>
+            <button class="toggle-button" type="button" data-mode="image">ลายน้ำรูปภาพ</button>
+          </div>
+
+          <div id="textWatermarkFields" class="field-group">
+            <label class="field">
+              <span>ข้อความลายน้ำ</span>
+              <input id="watermarkText" type="text" placeholder="เช่น YOUR BRAND หรือ @username">
+            </label>
+
+            <div class="grid two-up">
+              <label class="field">
+                <span>ฟอนต์</span>
+                <select id="fontFamily">
+                  <option value="Segoe UI">Segoe UI</option>
+                  <option value="Tahoma">Tahoma</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Courier New">Courier New</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>สีข้อความ</span>
+                <input id="textColor" type="color" value="#ffffff">
+              </label>
+            </div>
+          </div>
+
+          <div id="imageWatermarkFields" class="field-group is-hidden">
+            <label class="upload-zone compact" for="watermarkImage">
+              <input id="watermarkImage" type="file" accept="image/*,.svg">
+              <span class="upload-title">เลือกรูปลายน้ำ</span>
+              <span class="upload-subtitle" id="watermarkImageName">ยังไม่ได้เลือกรูป</span>
+            </label>
+          </div>
+
+          <div class="grid two-up">
+            <label class="field">
+              <span>ตำแหน่ง</span>
+              <select id="position">
+                <option value="bottom-right">ขวาล่าง</option>
+                <option value="bottom-left">ซ้ายล่าง</option>
+                <option value="top-right">ขวาบน</option>
+                <option value="top-left">ซ้ายบน</option>
+                <option value="center">กึ่งกลาง</option>
+                <option value="tile">เรียงซ้ำทั้งภาพ</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>ระยะขอบ <strong id="marginValue">24px</strong></span>
+              <input id="margin" type="range" min="0" max="120" value="24">
+            </label>
+          </div>
+
+          <div class="grid two-up">
+            <label class="field">
+              <span>ความทึบ <strong id="opacityValue">35%</strong></span>
+              <input id="opacity" type="range" min="5" max="100" value="35">
+            </label>
+
+            <label class="field">
+              <span>ขนาดลายน้ำ <strong id="scaleValue">18%</strong></span>
+              <input id="scale" type="range" min="5" max="50" value="18">
+            </label>
+          </div>
+
+          <div class="grid two-up">
+            <label class="field">
+              <span>การหมุน <strong id="rotationValue">0°</strong></span>
+              <input id="rotation" type="range" min="-180" max="180" value="0">
+            </label>
+
+            <label class="field">
+              <span>ส่งออกเป็น</span>
+              <select id="outputFormat">
+                <option value="auto">ตามชนิดไฟล์เดิม</option>
+                <option value="image/png">PNG</option>
+                <option value="image/jpeg">JPG</option>
+                <option value="image/webp">WebP</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid two-up">
+            <label class="field">
+              <span>คุณภาพไฟล์บีบอัด <strong id="qualityValue">92%</strong></span>
+              <input id="quality" type="range" min="50" max="100" value="92">
+            </label>
+
+            <label class="checkbox-field">
+              <input id="repeatDiagonal" type="checkbox">
+              <span>จัดเรียงเฉียงเมื่อใช้แบบเรียงซ้ำ</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button id="processButton" class="primary-button" type="button">สร้างลายน้ำให้ทุกรูป</button>
+          <button id="downloadAllButton" class="secondary-button" type="button" disabled>ดาวน์โหลดทั้งหมด</button>
+        </div>
+
+        <p class="support-note">
+          ไฟล์อย่าง SVG หรือ GIF สามารถนำเข้าได้ถ้าเบราว์เซอร์เปิดได้ แต่ผลลัพธ์หลังใส่ลายน้ำจะถูกส่งออกเป็นภาพนิ่ง
+        </p>
+      </section>
+
+      <section class="panel preview-panel">
+        <div class="panel-header">
+          <h2>ภาพตัวอย่างและผลลัพธ์</h2>
+          <p id="statusText">ยังไม่มีรูปภาพที่เลือก</p>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <h3>เริ่มต้นด้วยการเลือกรูปภาพ</h3>
+          <p>เมื่อประมวลผลแล้ว คุณจะเห็นตัวอย่างพร้อมปุ่มดาวน์โหลดในแต่ละใบ</p>
+        </div>
+
+        <div id="resultsGrid" class="results-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="resultCardTemplate">
+    <article class="result-card">
+      <div class="result-preview">
+        <img alt="">
+      </div>
+      <div class="result-meta">
+        <div>
+          <h3 class="file-name"></h3>
+          <p class="file-detail"></p>
+        </div>
+        <button class="download-button" type="button">ดาวน์โหลด</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
