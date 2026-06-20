@@ -1,18 +1,18 @@
 # Image Resize & Compress
 
-A simple browser-only web app for preparing JPG images under a selected file size limit.
+A simple browser-only web app for preparing images under a selected file size limit.
 
 ## Features
 
 - Upload one or multiple images at once.
 - Preview imported images before processing.
-- Smart mode keeps original image dimensions when the source file is already under the selected limit.
-- Delivery app mode forces output to `750 x 750 px` and under the selected limit.
+- Preserve mode keeps the original file unchanged when the source file is already under the selected limit.
+- Square output mode can force `750 x 750 px`, `1000 x 1000 px`, or `1200 x 1200 px` under the selected limit.
 - Choose center crop or fit-with-white-padding mode whenever resizing is needed.
-- Convert final output to JPG.
+- Convert resized square output to JPG.
 - Place transparent images on a white background before JPG export.
 - Choose a saved file size limit: not over `2 MB`, or the `5 MB` option capped at an actual maximum of `4.5 MB`.
-- Keep original JPG files untouched when they already match the selected output rule and limit.
+- Keep original files untouched in Preserve mode when they are already under the selected limit.
 - Compress JPG output automatically, starting at high quality and stepping down only when needed to meet the selected limit.
 - Preview processed results before download.
 - Download individual images or download all processed images when multiple files are ready.

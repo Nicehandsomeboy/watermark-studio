@@ -1,6 +1,5 @@
-const OUTPUT_SIZE = 750;
+const DEFAULT_SQUARE_SIZE = 750;
 const START_QUALITY = 0.92;
-const KEEP_SIZE_QUALITY = 0.98;
 const MIN_QUALITY = 0.4;
 const QUALITY_STEP = 0.06;
 const FILE_SIZE_LIMITS = {
@@ -68,8 +67,21 @@ function getFileSizeLimit() {
   return FILE_SIZE_LIMITS[elements.fileSizeLimit.value] || FILE_SIZE_LIMITS["2mb"];
 }
 
-function getOutputMode() {
-  return elements.outputMode.value || "smart";
+function getOutputRule() {
+  const value = elements.outputMode.value || "preserve";
+
+  if (value.startsWith("square-")) {
+    const size = Number(value.replace("square-", ""));
+    return {
+      mode: "square",
+      size: Number.isFinite(size) ? size : DEFAULT_SQUARE_SIZE,
+    };
+  }
+
+  return {
+    mode: "preserve",
+    size: DEFAULT_SQUARE_SIZE,
+  };
 }
 
 function getBaseName(fileName) {
@@ -78,6 +90,10 @@ function getBaseName(fileName) {
 
 function getOutputName(fileName, width, height) {
   return `${getBaseName(fileName)}-${width}x${height}.jpg`;
+}
+
+function getOriginalOutputName(fileName) {
+  return fileName || "image";
 }
 
 function canvasToJpegBlob(canvas, quality) {
@@ -169,7 +185,7 @@ function renderProcessedPreviews() {
     image.alt = result.outputName;
     fileName.textContent = result.originalName;
     originalSize.textContent = formatBytes(result.originalBytes);
-    dimensions.textContent = `${result.outputWidth || OUTPUT_SIZE} x ${result.outputHeight || OUTPUT_SIZE} px`;
+    dimensions.textContent = `${result.outputWidth || DEFAULT_SQUARE_SIZE} x ${result.outputHeight || DEFAULT_SQUARE_SIZE} px`;
     fileLimit.textContent = result.limitLabel || getFileSizeLimit().label;
 
     if (result.error) {
@@ -220,57 +236,38 @@ function getImageSize(image) {
   };
 }
 
-function getDrawRect(sourceWidth, sourceHeight, mode) {
+function getDrawRect(sourceWidth, sourceHeight, mode, outputSize) {
   const scale = mode === "cover"
-    ? Math.max(OUTPUT_SIZE / sourceWidth, OUTPUT_SIZE / sourceHeight)
-    : Math.min(OUTPUT_SIZE / sourceWidth, OUTPUT_SIZE / sourceHeight);
+    ? Math.max(outputSize / sourceWidth, outputSize / sourceHeight)
+    : Math.min(outputSize / sourceWidth, outputSize / sourceHeight);
 
   const width = sourceWidth * scale;
   const height = sourceHeight * scale;
 
   return {
-    x: (OUTPUT_SIZE - width) / 2,
-    y: (OUTPUT_SIZE - height) / 2,
+    x: (outputSize - width) / 2,
+    y: (outputSize - height) / 2,
     width,
     height,
   };
 }
 
-function createOutputCanvas(image, mode) {
+function createSquareCanvas(image, mode, outputSize) {
   const canvas = document.createElement("canvas");
-  canvas.width = OUTPUT_SIZE;
-  canvas.height = OUTPUT_SIZE;
+  canvas.width = outputSize;
+  canvas.height = outputSize;
 
   // Canvas output is sRGB in current browsers; request it explicitly where supported.
   const contextOptions = { alpha: false, colorSpace: "srgb" };
   const ctx = canvas.getContext("2d", contextOptions) || canvas.getContext("2d");
   const sourceSize = getImageSize(image);
-  const rect = getDrawRect(sourceSize.width, sourceSize.height, mode);
+  const rect = getDrawRect(sourceSize.width, sourceSize.height, mode, outputSize);
 
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+  ctx.fillRect(0, 0, outputSize, outputSize);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(image, rect.x, rect.y, rect.width, rect.height);
-
-  return canvas;
-}
-
-function createOriginalSizeCanvas(image) {
-  const sourceSize = getImageSize(image);
-  const canvas = document.createElement("canvas");
-  canvas.width = sourceSize.width;
-  canvas.height = sourceSize.height;
-
-  // Canvas output is sRGB in current browsers; request it explicitly where supported.
-  const contextOptions = { alpha: false, colorSpace: "srgb" };
-  const ctx = canvas.getContext("2d", contextOptions) || canvas.getContext("2d");
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, sourceSize.width, sourceSize.height);
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(image, 0, 0, sourceSize.width, sourceSize.height);
 
   return canvas;
 }
@@ -299,34 +296,40 @@ function isJpegFile(file) {
   return file.type === "image/jpeg" || /\.jpe?g$/i.test(file.name);
 }
 
-function isDeliveryReadyJpeg(file, sourceSize, sizeLimit) {
-  return isJpegFile(file)
-    && file.size <= sizeLimit.bytes
-    && sourceSize.width === OUTPUT_SIZE
-    && sourceSize.height === OUTPUT_SIZE;
+function canKeepSquareOriginal(file, sourceSize, sizeLimit, outputSize) {
+  return file.size <= sizeLimit.bytes
+    && sourceSize.width === outputSize
+    && sourceSize.height === outputSize;
 }
 
-async function processFile(file, mode, sizeLimit, outputMode) {
+function canKeepSquareJpeg(file, sourceSize, sizeLimit, outputSize) {
+  return canKeepSquareOriginal(file, sourceSize, sizeLimit, outputSize)
+    && isJpegFile(file);
+}
+
+async function processFile(file, mode, sizeLimit, outputRule) {
   const image = await loadImage(file);
   const sourceSize = getImageSize(image);
 
-  if (outputMode === "delivery") {
-    if (isDeliveryReadyJpeg(file, sourceSize, sizeLimit)) {
+  if (outputRule.mode === "square") {
+    const outputSize = outputRule.size;
+
+    if (canKeepSquareJpeg(file, sourceSize, sizeLimit, outputSize)) {
       return {
         blob: file,
         quality: null,
         previewUrl: URL.createObjectURL(file),
         originalName: file.name,
         originalBytes: file.size,
-        outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
-        outputWidth: OUTPUT_SIZE,
-        outputHeight: OUTPUT_SIZE,
+        outputName: getOriginalOutputName(file.name),
+        outputWidth: outputSize,
+        outputHeight: outputSize,
         limitLabel: sizeLimit.label,
-        message: "Original JPG already matches delivery requirements. No recompression was applied.",
+        message: `Original JPG already matches ${outputSize} x ${outputSize} px and the selected limit. No recompression was applied.`,
       };
     }
 
-    const canvas = createOutputCanvas(image, mode);
+    const canvas = createSquareCanvas(image, mode, outputSize);
     const { blob, quality } = await compressCanvasToLimit(canvas, sizeLimit);
 
     return {
@@ -335,48 +338,30 @@ async function processFile(file, mode, sizeLimit, outputMode) {
       previewUrl: URL.createObjectURL(blob),
       originalName: file.name,
       originalBytes: file.size,
-      outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
-      outputWidth: OUTPUT_SIZE,
-      outputHeight: OUTPUT_SIZE,
+      outputName: getOutputName(file.name, outputSize, outputSize),
+      outputWidth: outputSize,
+      outputHeight: outputSize,
       limitLabel: sizeLimit.label,
-      message: `Delivery app mode: 750 x 750 px JPG ready at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
+      message: `Square output: ${outputSize} x ${outputSize} px JPG ready at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
     };
   }
 
   if (file.size <= sizeLimit.bytes) {
-    if (isJpegFile(file)) {
-      return {
-        blob: file,
-        quality: null,
-        previewUrl: URL.createObjectURL(file),
-        originalName: file.name,
-        originalBytes: file.size,
-        outputName: getOutputName(file.name, sourceSize.width, sourceSize.height),
-        outputWidth: sourceSize.width,
-        outputHeight: sourceSize.height,
-        limitLabel: sizeLimit.label,
-        message: "Original JPG kept. No resize or recompression was applied.",
-      };
-    }
-
-    const originalCanvas = createOriginalSizeCanvas(image);
-    const { blob, quality } = await compressCanvasToLimit(originalCanvas, sizeLimit, KEEP_SIZE_QUALITY);
-
     return {
-      blob,
-      quality,
-      previewUrl: URL.createObjectURL(blob),
+      blob: file,
+      quality: null,
+      previewUrl: URL.createObjectURL(file),
       originalName: file.name,
       originalBytes: file.size,
-      outputName: getOutputName(file.name, sourceSize.width, sourceSize.height),
+      outputName: getOriginalOutputName(file.name),
       outputWidth: sourceSize.width,
       outputHeight: sourceSize.height,
       limitLabel: sizeLimit.label,
-      message: `Original dimensions kept. JPG exported at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
+      message: "Original file kept. No resize, conversion, or compression was applied.",
     };
   }
 
-  const canvas = createOutputCanvas(image, mode);
+  const canvas = createSquareCanvas(image, mode, DEFAULT_SQUARE_SIZE);
   const { blob, quality } = await compressCanvasToLimit(canvas, sizeLimit);
 
   return {
@@ -385,11 +370,11 @@ async function processFile(file, mode, sizeLimit, outputMode) {
     previewUrl: URL.createObjectURL(blob),
     originalName: file.name,
     originalBytes: file.size,
-    outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
-    outputWidth: OUTPUT_SIZE,
-    outputHeight: OUTPUT_SIZE,
+    outputName: getOutputName(file.name, DEFAULT_SQUARE_SIZE, DEFAULT_SQUARE_SIZE),
+    outputWidth: DEFAULT_SQUARE_SIZE,
+    outputHeight: DEFAULT_SQUARE_SIZE,
     limitLabel: sizeLimit.label,
-    message: `Resized to 750 x 750 px. JPG ready at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
+    message: `Source exceeded the limit, so it was resized to ${DEFAULT_SQUARE_SIZE} x ${DEFAULT_SQUARE_SIZE} px JPG at quality ${Math.round(quality * 100)}%.`,
   };
 }
 
@@ -401,7 +386,7 @@ async function processImages() {
 
   const mode = getResizeMode();
   const sizeLimit = getFileSizeLimit();
-  const outputMode = getOutputMode();
+  const outputRule = getOutputRule();
   elements.processButton.disabled = true;
   elements.downloadAllButton.disabled = true;
   revokeResultUrls();
@@ -413,13 +398,13 @@ async function processImages() {
     setStatus(`Processing ${index + 1}/${state.files.length}: ${file.name}`);
 
     try {
-      const result = await processFile(file, mode, sizeLimit, outputMode);
+      const result = await processFile(file, mode, sizeLimit, outputRule);
       state.results.push(result);
     } catch (error) {
       state.results.push({
         originalName: file.name,
         originalBytes: file.size,
-        outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
+        outputName: getOutputName(file.name, outputRule.size, outputRule.size),
         limitLabel: sizeLimit.label,
         error: error.message || "This image could not be processed.",
       });
@@ -436,9 +421,9 @@ async function processImages() {
   } else if (errorCount > 0) {
     setStatus(`Processed ${successCount} image(s). ${errorCount} image(s) need attention.`, "error");
   } else {
-    const successMessage = outputMode === "delivery"
-      ? `Processed ${successCount} image(s). Every output is 750 x 750 px and ${sizeLimit.statusText}.`
-      : `Processed ${successCount} image(s). Images under the limit were kept at original size; larger files were resized.`;
+    const successMessage = outputRule.mode === "square"
+      ? `Processed ${successCount} image(s). Every output is ${outputRule.size} x ${outputRule.size} px and ${sizeLimit.statusText}.`
+      : `Processed ${successCount} image(s). Files under the limit were kept unchanged; larger files were resized to ${DEFAULT_SQUARE_SIZE} x ${DEFAULT_SQUARE_SIZE} px.`;
     setStatus(successMessage, "success");
   }
 

@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Local browser tool</p>
         <h1>Image Resize & Compress</h1>
-        <p class="intro">Upload images, preview them, keep quality when possible, or force delivery-ready 750 x 750 px JPG files under the selected size limit.</p>
+        <p class="intro">Upload images, preview them, preserve files already under the selected limit, or force square delivery-ready output at 750, 1000, or 1200 px.</p>
       </div>
       <div class="privacy-note">
         <strong>No upload server.</strong>
@@ -40,7 +40,7 @@
               <input type="radio" name="resizeMode" value="cover" checked>
               <span>
                 <strong>Center crop</strong>
-                When resizing is needed, fill 750 x 750 by cropping from the center.
+                When resizing is needed, fill the selected square size by cropping from the center.
               </span>
             </label>
             <label class="radio-card">
@@ -55,8 +55,10 @@
           <label class="select-field" for="outputMode">
             <span>Output dimensions</span>
             <select id="outputMode">
-              <option value="smart">Preserve if under limit</option>
-              <option value="delivery">Force 750 x 750 for delivery apps</option>
+              <option value="preserve">Preserve original if under limit</option>
+              <option value="square-750">Force 750 x 750</option>
+              <option value="square-1000">Force 1000 x 1000</option>
+              <option value="square-1200">Force 1200 x 1200</option>
             </select>
           </label>
 
@@ -70,7 +72,7 @@
 
           <div class="fixed-output">
             <span>Output rule</span>
-            <strong>Smart preserve or delivery-ready square</strong>
+            <strong>Preserve original or force selected square</strong>
           </div>
         </section>
 
