@@ -10,7 +10,8 @@ A simple browser-only web app for preparing square JPG images.
 - Choose center crop or fit-with-white-padding mode.
 - Convert final output to JPG.
 - Place transparent images on a white background before JPG export.
-- Compress JPG output automatically, starting at `0.92` quality and stepping down until the file is under `2 MB`.
+- Choose a saved file size limit: not over `2 MB`, or the `5 MB` option capped at an actual maximum of `4.5 MB`.
+- Compress JPG output automatically, starting at `0.92` quality and stepping down until the selected limit is met.
 - Preview processed results before download.
 - Download individual images or download all processed images when multiple files are ready.
 
@@ -18,7 +19,7 @@ A simple browser-only web app for preparing square JPG images.
 
 1. Open `index.html` in a browser.
 2. Choose or drag in image files.
-3. Pick the resize mode.
+3. Pick the resize mode and saved file size limit.
 4. Click **Process / Preview**.
 5. Download each JPG or use **Download All** for multiple outputs.
 

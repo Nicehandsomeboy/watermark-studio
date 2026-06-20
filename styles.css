@@ -27,7 +27,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -183,6 +184,25 @@ h1 {
 .mode-fieldset legend {
   margin-bottom: 8px;
   font-weight: 700;
+}
+
+.select-field {
+  display: grid;
+  gap: 8px;
+}
+
+.select-field span {
+  font-weight: 700;
+}
+
+.select-field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fbfcfe;
+  color: var(--text);
 }
 
 .radio-card {

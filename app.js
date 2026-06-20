@@ -1,8 +1,19 @@
 const OUTPUT_SIZE = 750;
-const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
 const START_QUALITY = 0.92;
 const MIN_QUALITY = 0.4;
 const QUALITY_STEP = 0.06;
+const FILE_SIZE_LIMITS = {
+  "2mb": {
+    bytes: 2 * 1024 * 1024,
+    label: "2 MB",
+    statusText: "under 2 MB",
+  },
+  "5mb": {
+    bytes: 4.5 * 1024 * 1024,
+    label: "4.5 MB",
+    statusText: "under 4.5 MB",
+  },
+};
 
 const state = {
   files: [],
@@ -16,6 +27,7 @@ const elements = {
   imageCount: document.getElementById("imageCount"),
   originalGrid: document.getElementById("originalGrid"),
   processedGrid: document.getElementById("processedGrid"),
+  fileSizeLimit: document.getElementById("fileSizeLimit"),
   processButton: document.getElementById("processButton"),
   downloadAllButton: document.getElementById("downloadAllButton"),
   statusText: document.getElementById("statusText"),
@@ -48,6 +60,10 @@ function setStatus(message, type = "neutral") {
 
 function getResizeMode() {
   return document.querySelector('input[name="resizeMode"]:checked')?.value || "cover";
+}
+
+function getFileSizeLimit() {
+  return FILE_SIZE_LIMITS[elements.fileSizeLimit.value] || FILE_SIZE_LIMITS["2mb"];
 }
 
 function getBaseName(fileName) {
@@ -140,6 +156,7 @@ function renderProcessedPreviews() {
     const originalSize = card.querySelector(".original-size");
     const finalSize = card.querySelector(".final-size");
     const dimensions = card.querySelector(".dimensions");
+    const fileLimit = card.querySelector(".file-limit");
     const message = card.querySelector(".result-message");
     const downloadButton = card.querySelector(".download-button");
 
@@ -147,6 +164,7 @@ function renderProcessedPreviews() {
     fileName.textContent = result.originalName;
     originalSize.textContent = formatBytes(result.originalBytes);
     dimensions.textContent = `${OUTPUT_SIZE} x ${OUTPUT_SIZE} px`;
+    fileLimit.textContent = result.limitLabel || getFileSizeLimit().label;
 
     if (result.error) {
       image.removeAttribute("src");
@@ -157,7 +175,7 @@ function renderProcessedPreviews() {
     } else {
       image.src = result.previewUrl;
       finalSize.textContent = formatBytes(result.blob.size);
-      message.textContent = `JPG ready at quality ${Math.round(result.quality * 100)}%.`;
+      message.textContent = `JPG ready at quality ${Math.round(result.quality * 100)}%, capped at ${result.limitLabel}.`;
       message.classList.add("is-success");
       downloadButton.addEventListener("click", () => downloadBlob(result.blob, result.outputName));
     }
@@ -232,7 +250,7 @@ function createOutputCanvas(image, mode) {
   return canvas;
 }
 
-async function compressCanvasToLimit(canvas) {
+async function compressCanvasToLimit(canvas, sizeLimit) {
   const qualityValues = [];
 
   for (let quality = START_QUALITY; quality > MIN_QUALITY; quality -= QUALITY_STEP) {
@@ -244,18 +262,18 @@ async function compressCanvasToLimit(canvas) {
   for (const quality of qualityValues) {
     const blob = await canvasToJpegBlob(canvas, quality);
 
-    if (blob.size <= MAX_OUTPUT_BYTES) {
+    if (blob.size <= sizeLimit.bytes) {
       return { blob, quality };
     }
   }
 
-  throw new Error("Could not compress this image under 2 MB. Try a simpler source image.");
+  throw new Error(`Could not compress this image ${sizeLimit.statusText}. Try a simpler source image.`);
 }
 
-async function processFile(file, mode) {
+async function processFile(file, mode, sizeLimit) {
   const image = await loadImage(file);
   const canvas = createOutputCanvas(image, mode);
-  const { blob, quality } = await compressCanvasToLimit(canvas);
+  const { blob, quality } = await compressCanvasToLimit(canvas, sizeLimit);
 
   return {
     blob,
@@ -264,6 +282,7 @@ async function processFile(file, mode) {
     originalName: file.name,
     originalBytes: file.size,
     outputName: getOutputName(file.name),
+    limitLabel: sizeLimit.label,
   };
 }
 
@@ -274,6 +293,7 @@ async function processImages() {
   }
 
   const mode = getResizeMode();
+  const sizeLimit = getFileSizeLimit();
   elements.processButton.disabled = true;
   elements.downloadAllButton.disabled = true;
   revokeResultUrls();
@@ -285,13 +305,14 @@ async function processImages() {
     setStatus(`Processing ${index + 1}/${state.files.length}: ${file.name}`);
 
     try {
-      const result = await processFile(file, mode);
+      const result = await processFile(file, mode, sizeLimit);
       state.results.push(result);
     } catch (error) {
       state.results.push({
         originalName: file.name,
         originalBytes: file.size,
         outputName: getOutputName(file.name),
+        limitLabel: sizeLimit.label,
         error: error.message || "This image could not be processed.",
       });
     }
@@ -307,7 +328,7 @@ async function processImages() {
   } else if (errorCount > 0) {
     setStatus(`Processed ${successCount} image(s). ${errorCount} image(s) need attention.`, "error");
   } else {
-    setStatus(`Processed ${successCount} image(s). Every JPG is 750 x 750 px and under 2 MB.`, "success");
+    setStatus(`Processed ${successCount} image(s). Every JPG is 750 x 750 px and ${sizeLimit.statusText}.`, "success");
   }
 
   elements.processButton.disabled = false;
@@ -385,6 +406,13 @@ document.querySelectorAll('input[name="resizeMode"]').forEach((input) => {
       setStatus("Resize mode changed. Click Process / Preview to create updated JPG files.");
     }
   });
+});
+
+elements.fileSizeLimit.addEventListener("change", () => {
+  if (state.results.length > 0) {
+    clearProcessedPreviews();
+    setStatus("File size limit changed. Click Process / Preview to create updated JPG files.");
+  }
 });
 
 setupDragAndDrop();
