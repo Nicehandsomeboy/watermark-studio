@@ -28,6 +28,7 @@ const elements = {
   imageCount: document.getElementById("imageCount"),
   originalGrid: document.getElementById("originalGrid"),
   processedGrid: document.getElementById("processedGrid"),
+  outputMode: document.getElementById("outputMode"),
   fileSizeLimit: document.getElementById("fileSizeLimit"),
   processButton: document.getElementById("processButton"),
   downloadAllButton: document.getElementById("downloadAllButton"),
@@ -65,6 +66,10 @@ function getResizeMode() {
 
 function getFileSizeLimit() {
   return FILE_SIZE_LIMITS[elements.fileSizeLimit.value] || FILE_SIZE_LIMITS["2mb"];
+}
+
+function getOutputMode() {
+  return elements.outputMode.value || "smart";
 }
 
 function getBaseName(fileName) {
@@ -294,9 +299,49 @@ function isJpegFile(file) {
   return file.type === "image/jpeg" || /\.jpe?g$/i.test(file.name);
 }
 
-async function processFile(file, mode, sizeLimit) {
+function isDeliveryReadyJpeg(file, sourceSize, sizeLimit) {
+  return isJpegFile(file)
+    && file.size <= sizeLimit.bytes
+    && sourceSize.width === OUTPUT_SIZE
+    && sourceSize.height === OUTPUT_SIZE;
+}
+
+async function processFile(file, mode, sizeLimit, outputMode) {
   const image = await loadImage(file);
   const sourceSize = getImageSize(image);
+
+  if (outputMode === "delivery") {
+    if (isDeliveryReadyJpeg(file, sourceSize, sizeLimit)) {
+      return {
+        blob: file,
+        quality: null,
+        previewUrl: URL.createObjectURL(file),
+        originalName: file.name,
+        originalBytes: file.size,
+        outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
+        outputWidth: OUTPUT_SIZE,
+        outputHeight: OUTPUT_SIZE,
+        limitLabel: sizeLimit.label,
+        message: "Original JPG already matches delivery requirements. No recompression was applied.",
+      };
+    }
+
+    const canvas = createOutputCanvas(image, mode);
+    const { blob, quality } = await compressCanvasToLimit(canvas, sizeLimit);
+
+    return {
+      blob,
+      quality,
+      previewUrl: URL.createObjectURL(blob),
+      originalName: file.name,
+      originalBytes: file.size,
+      outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
+      outputWidth: OUTPUT_SIZE,
+      outputHeight: OUTPUT_SIZE,
+      limitLabel: sizeLimit.label,
+      message: `Delivery app mode: 750 x 750 px JPG ready at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
+    };
+  }
 
   if (file.size <= sizeLimit.bytes) {
     if (isJpegFile(file)) {
@@ -356,6 +401,7 @@ async function processImages() {
 
   const mode = getResizeMode();
   const sizeLimit = getFileSizeLimit();
+  const outputMode = getOutputMode();
   elements.processButton.disabled = true;
   elements.downloadAllButton.disabled = true;
   revokeResultUrls();
@@ -367,7 +413,7 @@ async function processImages() {
     setStatus(`Processing ${index + 1}/${state.files.length}: ${file.name}`);
 
     try {
-      const result = await processFile(file, mode, sizeLimit);
+      const result = await processFile(file, mode, sizeLimit, outputMode);
       state.results.push(result);
     } catch (error) {
       state.results.push({
@@ -390,7 +436,10 @@ async function processImages() {
   } else if (errorCount > 0) {
     setStatus(`Processed ${successCount} image(s). ${errorCount} image(s) need attention.`, "error");
   } else {
-    setStatus(`Processed ${successCount} image(s). Images under the limit were kept at original size; larger files were resized.`, "success");
+    const successMessage = outputMode === "delivery"
+      ? `Processed ${successCount} image(s). Every output is 750 x 750 px and ${sizeLimit.statusText}.`
+      : `Processed ${successCount} image(s). Images under the limit were kept at original size; larger files were resized.`;
+    setStatus(successMessage, "success");
   }
 
   elements.processButton.disabled = false;
@@ -474,6 +523,13 @@ elements.fileSizeLimit.addEventListener("change", () => {
   if (state.results.length > 0) {
     clearProcessedPreviews();
     setStatus("File size limit changed. Click Process / Preview to create updated JPG files.");
+  }
+});
+
+elements.outputMode.addEventListener("change", () => {
+  if (state.results.length > 0) {
+    clearProcessedPreviews();
+    setStatus("Output dimensions changed. Click Process / Preview to create updated JPG files.");
   }
 });
 
