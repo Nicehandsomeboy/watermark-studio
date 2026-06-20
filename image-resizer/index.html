@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Local browser tool</p>
         <h1>Image Resize & Compress</h1>
-        <p class="intro">Upload images, preview them, resize to exactly 750 x 750 px, convert to JPG, and choose the maximum saved file size before downloading.</p>
+        <p class="intro">Upload images, preview them, keep images that already fit the selected limit, or resize larger files to 750 x 750 px before downloading.</p>
       </div>
       <div class="privacy-note">
         <strong>No upload server.</strong>
@@ -40,14 +40,14 @@
               <input type="radio" name="resizeMode" value="cover" checked>
               <span>
                 <strong>Center crop</strong>
-                Fill 750 x 750 by cropping from the center.
+                For files over the selected limit, fill 750 x 750 by cropping from the center.
               </span>
             </label>
             <label class="radio-card">
               <input type="radio" name="resizeMode" value="contain">
               <span>
                 <strong>Fit with padding</strong>
-                Keep the full image and add white padding.
+                For files over the selected limit, keep the full image and add white padding.
               </span>
             </label>
           </fieldset>
@@ -61,8 +61,8 @@
           </label>
 
           <div class="fixed-output">
-            <span>Final size</span>
-            <strong>750 x 750 px JPG</strong>
+            <span>Output rule</span>
+            <strong>Keep if under limit, resize if over</strong>
           </div>
         </section>
 

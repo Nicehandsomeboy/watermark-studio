@@ -1,5 +1,6 @@
 const OUTPUT_SIZE = 750;
 const START_QUALITY = 0.92;
+const KEEP_SIZE_QUALITY = 0.98;
 const MIN_QUALITY = 0.4;
 const QUALITY_STEP = 0.06;
 const FILE_SIZE_LIMITS = {
@@ -70,8 +71,8 @@ function getBaseName(fileName) {
   return fileName.replace(/\.[^/.]+$/, "") || "image";
 }
 
-function getOutputName(fileName) {
-  return `${getBaseName(fileName)}-750x750.jpg`;
+function getOutputName(fileName, width, height) {
+  return `${getBaseName(fileName)}-${width}x${height}.jpg`;
 }
 
 function canvasToJpegBlob(canvas, quality) {
@@ -163,7 +164,7 @@ function renderProcessedPreviews() {
     image.alt = result.outputName;
     fileName.textContent = result.originalName;
     originalSize.textContent = formatBytes(result.originalBytes);
-    dimensions.textContent = `${OUTPUT_SIZE} x ${OUTPUT_SIZE} px`;
+    dimensions.textContent = `${result.outputWidth || OUTPUT_SIZE} x ${result.outputHeight || OUTPUT_SIZE} px`;
     fileLimit.textContent = result.limitLabel || getFileSizeLimit().label;
 
     if (result.error) {
@@ -175,7 +176,7 @@ function renderProcessedPreviews() {
     } else {
       image.src = result.previewUrl;
       finalSize.textContent = formatBytes(result.blob.size);
-      message.textContent = `JPG ready at quality ${Math.round(result.quality * 100)}%, capped at ${result.limitLabel}.`;
+      message.textContent = result.message;
       message.classList.add("is-success");
       downloadButton.addEventListener("click", () => downloadBlob(result.blob, result.outputName));
     }
@@ -250,10 +251,29 @@ function createOutputCanvas(image, mode) {
   return canvas;
 }
 
-async function compressCanvasToLimit(canvas, sizeLimit) {
+function createOriginalSizeCanvas(image) {
+  const sourceSize = getImageSize(image);
+  const canvas = document.createElement("canvas");
+  canvas.width = sourceSize.width;
+  canvas.height = sourceSize.height;
+
+  // Canvas output is sRGB in current browsers; request it explicitly where supported.
+  const contextOptions = { alpha: false, colorSpace: "srgb" };
+  const ctx = canvas.getContext("2d", contextOptions) || canvas.getContext("2d");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, sourceSize.width, sourceSize.height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(image, 0, 0, sourceSize.width, sourceSize.height);
+
+  return canvas;
+}
+
+async function compressCanvasToLimit(canvas, sizeLimit, startQuality = START_QUALITY) {
   const qualityValues = [];
 
-  for (let quality = START_QUALITY; quality > MIN_QUALITY; quality -= QUALITY_STEP) {
+  for (let quality = startQuality; quality > MIN_QUALITY; quality -= QUALITY_STEP) {
     qualityValues.push(Number(quality.toFixed(2)));
   }
 
@@ -270,8 +290,47 @@ async function compressCanvasToLimit(canvas, sizeLimit) {
   throw new Error(`Could not compress this image ${sizeLimit.statusText}. Try a simpler source image.`);
 }
 
+function isJpegFile(file) {
+  return file.type === "image/jpeg" || /\.jpe?g$/i.test(file.name);
+}
+
 async function processFile(file, mode, sizeLimit) {
   const image = await loadImage(file);
+  const sourceSize = getImageSize(image);
+
+  if (file.size <= sizeLimit.bytes) {
+    if (isJpegFile(file)) {
+      return {
+        blob: file,
+        quality: null,
+        previewUrl: URL.createObjectURL(file),
+        originalName: file.name,
+        originalBytes: file.size,
+        outputName: getOutputName(file.name, sourceSize.width, sourceSize.height),
+        outputWidth: sourceSize.width,
+        outputHeight: sourceSize.height,
+        limitLabel: sizeLimit.label,
+        message: "Original JPG kept. No resize or recompression was applied.",
+      };
+    }
+
+    const originalCanvas = createOriginalSizeCanvas(image);
+    const { blob, quality } = await compressCanvasToLimit(originalCanvas, sizeLimit, KEEP_SIZE_QUALITY);
+
+    return {
+      blob,
+      quality,
+      previewUrl: URL.createObjectURL(blob),
+      originalName: file.name,
+      originalBytes: file.size,
+      outputName: getOutputName(file.name, sourceSize.width, sourceSize.height),
+      outputWidth: sourceSize.width,
+      outputHeight: sourceSize.height,
+      limitLabel: sizeLimit.label,
+      message: `Original dimensions kept. JPG exported at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
+    };
+  }
+
   const canvas = createOutputCanvas(image, mode);
   const { blob, quality } = await compressCanvasToLimit(canvas, sizeLimit);
 
@@ -281,8 +340,11 @@ async function processFile(file, mode, sizeLimit) {
     previewUrl: URL.createObjectURL(blob),
     originalName: file.name,
     originalBytes: file.size,
-    outputName: getOutputName(file.name),
+    outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
+    outputWidth: OUTPUT_SIZE,
+    outputHeight: OUTPUT_SIZE,
     limitLabel: sizeLimit.label,
+    message: `Resized to 750 x 750 px. JPG ready at quality ${Math.round(quality * 100)}%, capped at ${sizeLimit.label}.`,
   };
 }
 
@@ -311,7 +373,7 @@ async function processImages() {
       state.results.push({
         originalName: file.name,
         originalBytes: file.size,
-        outputName: getOutputName(file.name),
+        outputName: getOutputName(file.name, OUTPUT_SIZE, OUTPUT_SIZE),
         limitLabel: sizeLimit.label,
         error: error.message || "This image could not be processed.",
       });
@@ -328,7 +390,7 @@ async function processImages() {
   } else if (errorCount > 0) {
     setStatus(`Processed ${successCount} image(s). ${errorCount} image(s) need attention.`, "error");
   } else {
-    setStatus(`Processed ${successCount} image(s). Every JPG is 750 x 750 px and ${sizeLimit.statusText}.`, "success");
+    setStatus(`Processed ${successCount} image(s). Images under the limit were kept at original size; larger files were resized.`, "success");
   }
 
   elements.processButton.disabled = false;
