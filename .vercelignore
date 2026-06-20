@@ -1,8 +1,19 @@
-*
-!index.html
-!styles.css
-!app.js
-!README.md
-!vercel.json
-!image-resizer/
-!image-resizer/**
+# Local Git and Vercel state
+.git
+.vercel
+
+# Workspace guidance and local-only helpers
+AGENTS.md
+.agents
+.codex
+launch-telegram-media-saver.cmd
+
+# Generated or unrelated work areas
+gmaps-route.png
+skills/
+taipei-route-walk/
+telegram-media-saver-extension/
+
+# Packaged extension and sensitive keys
+*.crx
+*.pem
