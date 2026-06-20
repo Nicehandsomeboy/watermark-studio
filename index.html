@@ -1,209 +1,128 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Watermark Studio</title>
+  <title>Image Resize & Compress</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="page-shell">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Batch Watermark Web App</p>
-        <h1>ใส่ลายน้ำหลายรูป พร้อมคงขนาดภาพต้นฉบับ</h1>
-        <p class="hero-text">
-          อัปโหลดรูปได้หลายไฟล์ในครั้งเดียว เลือกลายน้ำเป็นข้อความหรือรูปภาพ
-          แล้วส่งออกโดยรักษาความกว้างและความสูงเดิมของแต่ละไฟล์
-        </p>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Local browser tool</p>
+        <h1>Image Resize & Compress</h1>
+        <p class="intro">Upload images, preview them, resize to exactly 750 x 750 px, convert to JPG, and compress under 2 MB before downloading.</p>
       </div>
-      <div class="hero-card">
-        <div class="badge">No Upload Server</div>
-        <p>ประมวลผลทั้งหมดในเบราว์เซอร์ของคุณ</p>
-        <ul>
-          <li>รองรับหลายไฟล์พร้อมกัน</li>
-          <li>ใช้กับ JPG, PNG, SVG และชนิดไฟล์ภาพที่เบราว์เซอร์เปิดได้</li>
-          <li>ลายน้ำเป็นข้อความหรือรูปภาพ</li>
-        </ul>
+      <div class="privacy-note">
+        <strong>No upload server.</strong>
+        <span>All processing happens in your browser with Canvas.</span>
       </div>
     </header>
 
-    <main class="workspace">
-      <section class="panel controls-panel">
-        <div class="panel-header">
-          <h2>ตั้งค่าลายน้ำ</h2>
-          <p>เลือกรูปหลักและปรับลายน้ำตามต้องการ</p>
-        </div>
-
-        <div class="field-stack">
-          <label class="upload-zone" for="sourceImages">
-            <input id="sourceImages" type="file" accept="image/*,.svg" multiple>
-            <span class="upload-title">เลือกรูปภาพหลักหลายไฟล์</span>
-            <span class="upload-subtitle">ลากมาวางได้ รองรับไฟล์ภาพตามที่เบราว์เซอร์ของคุณอ่านได้</span>
+    <section class="tool-layout">
+      <aside class="panel controls-panel">
+        <section class="upload-area" aria-labelledby="uploadTitle">
+          <label class="upload-zone" for="imageInput">
+            <input id="imageInput" type="file" accept="image/*" multiple>
+            <span id="uploadTitle" class="upload-title">Choose images</span>
+            <span class="upload-subtitle">PNG, JPG, WebP, and other browser-supported image files</span>
           </label>
-
-          <div class="mode-toggle" role="radiogroup" aria-label="ชนิดลายน้ำ">
-            <button class="toggle-button is-active" type="button" data-mode="text">ลายน้ำข้อความ</button>
-            <button class="toggle-button" type="button" data-mode="image">ลายน้ำรูปภาพ</button>
-          </div>
-
-          <div id="textWatermarkFields" class="field-group">
-            <label class="field">
-              <span>ข้อความลายน้ำ</span>
-              <input id="watermarkText" type="text" placeholder="เช่น YOUR BRAND หรือ @username">
-            </label>
-
-            <div class="grid two-up">
-              <label class="field">
-                <span>ฟอนต์</span>
-                <select id="fontFamily">
-                  <option value="Segoe UI">Segoe UI</option>
-                  <option value="Tahoma">Tahoma</option>
-                  <option value="Arial">Arial</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Courier New">Courier New</option>
-                </select>
-              </label>
-
-              <label class="field">
-                <span>สีข้อความ</span>
-                <input id="textColor" type="color" value="#ffffff">
-              </label>
-            </div>
-          </div>
-
-          <div id="imageWatermarkFields" class="field-group is-hidden">
-            <label class="upload-zone compact" for="watermarkImage">
-              <input id="watermarkImage" type="file" accept="image/*,.svg">
-              <span class="upload-title">เลือกรูปลายน้ำ</span>
-              <span class="upload-subtitle" id="watermarkImageName">ยังไม่ได้เลือกรูป</span>
-            </label>
-          </div>
-
-          <div class="grid two-up">
-            <label class="field">
-              <span>ตำแหน่ง</span>
-              <select id="position">
-                <option value="bottom-right">ขวาล่าง</option>
-                <option value="bottom-left">ซ้ายล่าง</option>
-                <option value="top-right">ขวาบน</option>
-                <option value="top-left">ซ้ายบน</option>
-                <option value="center">กึ่งกลาง</option>
-                <option value="tile">เรียงซ้ำทั้งภาพ</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span>ระยะขอบ <strong id="marginValue">24px</strong></span>
-              <input id="margin" type="range" min="0" max="120" value="24">
-            </label>
-          </div>
-
-          <div class="grid two-up">
-            <label class="field">
-              <span>ความทึบ <strong id="opacityValue">35%</strong></span>
-              <input id="opacity" type="range" min="5" max="100" value="35">
-            </label>
-
-            <label class="field">
-              <span>ขนาดลายน้ำ <strong id="scaleValue">18%</strong></span>
-              <input id="scale" type="range" min="5" max="50" value="18">
-            </label>
-          </div>
-
-          <div class="grid two-up">
-            <label class="field">
-              <span>การหมุน <strong id="rotationValue">0°</strong></span>
-              <input id="rotation" type="range" min="-180" max="180" value="0">
-            </label>
-
-            <label class="field">
-              <span>ส่งออกเป็น</span>
-              <select id="outputFormat">
-                <option value="auto">ตามชนิดไฟล์เดิม</option>
-                <option value="image/svg+xml">SVG</option>
-                <option value="image/jpeg">JPG</option>
-                <option value="image/png">PNG</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="grid two-up">
-            <label class="field">
-              <span>คุณภาพไฟล์บีบอัด <strong id="qualityValue">92%</strong></span>
-              <input id="quality" type="range" min="50" max="100" value="92">
-            </label>
-
-            <label class="checkbox-field">
-              <input id="repeatDiagonal" type="checkbox">
-              <span>จัดเรียงเฉียงเมื่อใช้แบบเรียงซ้ำ</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="action-row">
-          <button id="processButton" class="primary-button" type="button">สร้างลายน้ำให้ทุกรูป</button>
-          <button id="downloadAllButton" class="secondary-button" type="button" disabled>ดาวน์โหลดทั้งหมด</button>
-        </div>
-
-        <p class="support-note">
-          ถ้าเลือก SVG เป็นไฟล์ส่งออก ระบบจะสร้าง SVG ใหม่จากภาพผลลัพธ์ที่ฝังอยู่ภายในเพื่อให้นามสกุลเป็น .svg
-        </p>
-      </section>
-
-      <section class="panel preview-panel">
-        <div class="panel-header">
-          <h2>ภาพตัวอย่างและผลลัพธ์</h2>
-          <p id="statusText">ยังไม่มีรูปภาพที่เลือก</p>
-        </div>
-
-        <section id="selectedPreviewSection" class="selected-preview-section is-hidden">
-          <div class="selected-preview-header">
-            <h3>รูปที่เลือกไว้</h3>
-            <p id="selectedPreviewCount"></p>
-          </div>
-          <div id="selectedPreviewGrid" class="selected-preview-grid"></div>
+          <p id="imageCount" class="image-count">Imported images: 0</p>
         </section>
 
-        <div id="emptyState" class="empty-state">
-          <h3>เริ่มต้นด้วยการเลือกรูปภาพ</h3>
-          <p>เมื่อประมวลผลแล้ว คุณจะเห็นตัวอย่างพร้อมปุ่มดูรูปและปุ่มดาวน์โหลดในแต่ละใบ</p>
+        <section class="settings-panel" aria-labelledby="settingsTitle">
+          <h2 id="settingsTitle">Settings</h2>
+          <fieldset class="mode-fieldset">
+            <legend>Resize mode</legend>
+            <label class="radio-card">
+              <input type="radio" name="resizeMode" value="cover" checked>
+              <span>
+                <strong>Center crop</strong>
+                Fill 750 x 750 by cropping from the center.
+              </span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="resizeMode" value="contain">
+              <span>
+                <strong>Fit with padding</strong>
+                Keep the full image and add white padding.
+              </span>
+            </label>
+          </fieldset>
+
+          <div class="fixed-output">
+            <span>Final size</span>
+            <strong>750 x 750 px JPG</strong>
+          </div>
+        </section>
+
+        <div class="action-row">
+          <button id="processButton" class="primary-button" type="button">Process / Preview</button>
+          <button id="downloadAllButton" class="secondary-button" type="button" disabled>Download All</button>
         </div>
 
-        <div id="resultsGrid" class="results-grid"></div>
-      </section>
-    </main>
-  </div>
+        <p id="statusText" class="status-text" role="status">Select one or more images to begin.</p>
+      </aside>
 
-  <template id="resultCardTemplate">
-    <article class="result-card">
-      <div class="result-preview">
+      <section class="panel previews-panel">
+        <div class="section-heading">
+          <h2>Imported Preview</h2>
+          <p>Original images before processing.</p>
+        </div>
+        <div id="originalGrid" class="preview-grid empty-grid">
+          <div class="empty-state">No imported images yet.</div>
+        </div>
+
+        <div class="section-heading processed-heading">
+          <h2>Processed Preview</h2>
+          <p>Final JPG files ready for download.</p>
+        </div>
+        <div id="processedGrid" class="preview-grid empty-grid">
+          <div class="empty-state">Processed results will appear here.</div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="originalCardTemplate">
+    <article class="image-card">
+      <div class="image-frame">
         <img alt="">
       </div>
-      <div class="result-meta">
-        <div class="result-info">
-          <h3 class="file-name"></h3>
-          <p class="file-detail"></p>
-        </div>
-        <div class="result-actions">
-          <button class="view-button" type="button">ดูรูป</button>
-          <button class="download-button" type="button">ดาวน์โหลด</button>
-        </div>
+      <div class="card-body">
+        <h3 class="file-name"></h3>
+        <p class="file-meta"></p>
       </div>
     </article>
   </template>
 
-  <dialog id="imagePreviewDialog" class="image-preview-dialog">
-    <div class="dialog-shell">
-      <div class="dialog-header">
-        <h3 id="dialogTitle">ตัวอย่างรูป</h3>
-        <button id="closeDialogButton" class="dialog-close-button" type="button" aria-label="ปิด">ปิด</button>
+  <template id="processedCardTemplate">
+    <article class="image-card processed-card">
+      <div class="image-frame">
+        <img alt="">
       </div>
-      <div class="dialog-image-wrap">
-        <img id="dialogImage" alt="">
+      <div class="card-body">
+        <h3 class="file-name"></h3>
+        <dl class="details-list">
+          <div>
+            <dt>Original size</dt>
+            <dd class="original-size"></dd>
+          </div>
+          <div>
+            <dt>Final size</dt>
+            <dd class="final-size"></dd>
+          </div>
+          <div>
+            <dt>Dimensions</dt>
+            <dd class="dimensions"></dd>
+          </div>
+        </dl>
+        <p class="result-message"></p>
+        <button class="download-button" type="button">Download</button>
       </div>
-    </div>
-  </dialog>
+    </article>
+  </template>
 
   <script src="app.js"></script>
 </body>
