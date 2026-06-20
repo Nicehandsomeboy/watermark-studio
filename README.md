@@ -1,32 +1,30 @@
-# Image Resize & Compress
+# Watermark Studio
 
-A simple browser-only web app for preparing square JPG images.
+เว็บแอปสำหรับใส่ลายน้ำรูปภาพหลายไฟล์พร้อมกัน โดยประมวลผลทั้งหมดในเบราว์เซอร์และคงขนาดภาพต้นฉบับของแต่ละไฟล์ไว้
 
-## Features
+## ความสามารถ
 
-- Upload one or multiple images at once.
-- Preview imported images before processing.
-- Resize every output to exactly `750 x 750 px`.
-- Choose center crop or fit-with-white-padding mode.
-- Convert final output to JPG.
-- Place transparent images on a white background before JPG export.
-- Choose a saved file size limit: not over `2 MB`, or the `5 MB` option capped at an actual maximum of `4.5 MB`.
-- Compress JPG output automatically, starting at `0.92` quality and stepping down until the selected limit is met.
-- Preview processed results before download.
-- Download individual images or download all processed images when multiple files are ready.
+- อัปโหลดรูปได้หลายไฟล์พร้อมกัน
+- ลายน้ำเป็นข้อความหรือรูปภาพ
+- ปรับตำแหน่ง ความทึบ ขนาด ระยะขอบ และการหมุนได้
+- เลือกส่งออกตามชนิดไฟล์เดิม หรือบังคับเป็น PNG / JPG / WebP
+- รองรับไฟล์ภาพที่เบราว์เซอร์เปิดได้ เช่น JPG, PNG, WebP, BMP, GIF, SVG
 
-## Usage
+## วิธีใช้งาน
 
-1. Open `index.html` in a browser.
-2. Choose or drag in image files.
-3. Pick the resize mode and saved file size limit.
-4. Click **Process / Preview**.
-5. Download each JPG or use **Download All** for multiple outputs.
+1. เปิดไฟล์ `index.html`
+2. เลือกรูปภาพหลักทีละหลายไฟล์
+3. เลือกชนิดลายน้ำเป็นข้อความหรือรูปภาพ
+4. ปรับค่าตามต้องการ
+5. กดปุ่มสร้างลายน้ำ แล้วดาวน์โหลดรายรูปหรือทั้งหมด
 
-## Files
+## โครงสร้างไฟล์
 
-- `index.html` - page structure.
-- `styles.css` - responsive layout and interface styling.
-- `app.js` - local image loading, Canvas resizing, JPG compression, previews, and downloads.
+- `index.html` หน้าเว็บ
+- `styles.css` งานออกแบบและ responsive layout
+- `app.js` logic สำหรับอ่านไฟล์ วาดลายน้ำ และส่งออกผลลัพธ์
+- `vercel.json` config สำหรับ deploy บน Vercel แบบ static site
 
-No backend, uploads, analytics, or external storage are used.
+## Deploy บน Vercel
+
+โปรเจ็กต์นี้เป็น static site จึง deploy ได้โดยตรงผ่าน Vercel โดยไม่ต้อง build

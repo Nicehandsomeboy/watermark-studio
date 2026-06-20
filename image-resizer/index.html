@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Resize & Compress</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Local browser tool</p>
+        <h1>Image Resize & Compress</h1>
+        <p class="intro">Upload images, preview them, resize to exactly 750 x 750 px, convert to JPG, and choose the maximum saved file size before downloading.</p>
+      </div>
+      <div class="privacy-note">
+        <strong>No upload server.</strong>
+        <span>All processing happens in your browser with Canvas.</span>
+        <a class="header-link" href="../">Open Watermark Studio</a>
+      </div>
+    </header>
+
+    <section class="tool-layout">
+      <aside class="panel controls-panel">
+        <section class="upload-area" aria-labelledby="uploadTitle">
+          <label class="upload-zone" for="imageInput">
+            <input id="imageInput" type="file" accept="image/*" multiple>
+            <span id="uploadTitle" class="upload-title">Choose images</span>
+            <span class="upload-subtitle">PNG, JPG, WebP, and other browser-supported image files</span>
+          </label>
+          <p id="imageCount" class="image-count">Imported images: 0</p>
+        </section>
+
+        <section class="settings-panel" aria-labelledby="settingsTitle">
+          <h2 id="settingsTitle">Settings</h2>
+          <fieldset class="mode-fieldset">
+            <legend>Resize mode</legend>
+            <label class="radio-card">
+              <input type="radio" name="resizeMode" value="cover" checked>
+              <span>
+                <strong>Center crop</strong>
+                Fill 750 x 750 by cropping from the center.
+              </span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="resizeMode" value="contain">
+              <span>
+                <strong>Fit with padding</strong>
+                Keep the full image and add white padding.
+              </span>
+            </label>
+          </fieldset>
+
+          <label class="select-field" for="fileSizeLimit">
+            <span>Save file size</span>
+            <select id="fileSizeLimit">
+              <option value="2mb">Not over 2 MB</option>
+              <option value="5mb">Not over 5 MB (actual max 4.5 MB)</option>
+            </select>
+          </label>
+
+          <div class="fixed-output">
+            <span>Final size</span>
+            <strong>750 x 750 px JPG</strong>
+          </div>
+        </section>
+
+        <div class="action-row">
+          <button id="processButton" class="primary-button" type="button">Process / Preview</button>
+          <button id="downloadAllButton" class="secondary-button" type="button" disabled>Download All</button>
+        </div>
+
+        <p id="statusText" class="status-text" role="status">Select one or more images to begin.</p>
+      </aside>
+
+      <section class="panel previews-panel">
+        <div class="section-heading">
+          <h2>Imported Preview</h2>
+          <p>Original images before processing.</p>
+        </div>
+        <div id="originalGrid" class="preview-grid empty-grid">
+          <div class="empty-state">No imported images yet.</div>
+        </div>
+
+        <div class="section-heading processed-heading">
+          <h2>Processed Preview</h2>
+          <p>Final JPG files ready for download.</p>
+        </div>
+        <div id="processedGrid" class="preview-grid empty-grid">
+          <div class="empty-state">Processed results will appear here.</div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="originalCardTemplate">
+    <article class="image-card">
+      <div class="image-frame">
+        <img alt="">
+      </div>
+      <div class="card-body">
+        <h3 class="file-name"></h3>
+        <p class="file-meta"></p>
+      </div>
+    </article>
+  </template>
+
+  <template id="processedCardTemplate">
+    <article class="image-card processed-card">
+      <div class="image-frame">
+        <img alt="">
+      </div>
+      <div class="card-body">
+        <h3 class="file-name"></h3>
+        <dl class="details-list">
+          <div>
+            <dt>Original size</dt>
+            <dd class="original-size"></dd>
+          </div>
+          <div>
+            <dt>Final size</dt>
+            <dd class="final-size"></dd>
+          </div>
+          <div>
+            <dt>Dimensions</dt>
+            <dd class="dimensions"></dd>
+          </div>
+          <div>
+            <dt>Limit</dt>
+            <dd class="file-limit"></dd>
+          </div>
+        </dl>
+        <p class="result-message"></p>
+        <button class="download-button" type="button">Download</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
